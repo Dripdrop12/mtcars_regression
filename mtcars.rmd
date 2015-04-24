@@ -4,25 +4,58 @@ author: "Jonathan Hill, MPA"
 date: "Thursday, April 23, 2015"
 output: html_document
 ---
-```{r,warning=FALSE}
+```{r,echo=FALSE,warning=FALSE}
 library(datasets)
 library(lattice)
 data(mtcars)
-mtcars <-mtcars
 ```
-
 # Overview
-
 The two questions addressed in this project are:
 
 1. Is an automatic or manual transmission better for MPG?
 2. What is the MPG difference between automatic and manual transmissions?
 
-I will attempt to answer these questions using a multi-linear regression model with a dependent variable of miles per gallon.  The model will include independ variables (control variables) for the characteristics of the engine, such as the number of cylinders and displacement volume, and the car itself, such as rear axle ratio and weight.
+I will attempt to answer these questions using a multi-linear regression model with a dependent variable of miles per gallon.  The model will include independent variables (control variables) for the characteristics of the engine, such as the number of cylinders and displacement volume, and the car itself, such as rear axle ratio and weight.
 
-## The Data
-The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models).
+# The Data
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models). A table with more detailed information about each variable can be found in the appendix.
 
+# Exploratory Analysis
+The result of the Shapiro-Wilk normality test suggests it is safe to assume the dependent variable is normal with a mean of `r round(mean(mtcars$mpg),2)` mpg (as illustrated by the dark black line through the histogram in the appendix).
+
+The exploratory plots suggest that manual transmission vehicles may be more fuel efficient than automatic transmission vehicles because the top row is slightly higher than the bottom row, but they also illustrate that other factors are probably effecting fuel efficiency.
+
+For example, there seems to be an indirect relationship between fuel efficiency and weight.  This builds confidence in the quality of our data because it is reasonable to assume that heavier cars are less fuel efficient. It also necessitates the use of a multi-variate method such as multi-linear regression in order to accurately assess how a car's transmission type (automatic/manual) effects its fuel efficiency.
+
+## First Iteration of the Regression Model
+```{r, results='hide'}
+reg <- lm(mpg~.,data=mtcars)
+summary(reg)
+```
+
+The first iteration of my regression model included all of the independent variables from the mtcars dataset.  Only *wt* seemed to significantly impact *mpg*, but many insignificant variables were causing a lot of noise.
+
+## Final Regression Model
+In order to determine which variables to include in the final model, I used an R stepwise regression function, step(), and set the direction=both. This automatic process adds and removes independent variables to the model until it finds the combination of independent variables that maximizes the R^2^ of the model.
+
+$$mpg = \beta_0 + \beta_1 am + \beta_2 qsec + \beta_3 wt + \epsilon$$
+
+```{r, echo=FALSE, results='hide'}
+final.reg <- lm(mpg~am+qsec+wt,data=mtcars)
+```
+```{r,echo=FALSE}
+summary(final.reg)
+```
+
+# Conclusion
+Many characteristics of cars are highly correlated with each other.  For example, heavy cars tend to have larger engines and powerful engines tend to have more cylinders (see correlation matrix in the appendix).  This results in multi-colinearity issues.
+
+In order to deal with this problem, the 1/4 mile speed of a vehicle is extremely useful.  If the car does not have the correct balance of attributes, this medium distance speed will decrease and so to will its fuel efficiency.  Therefore, it is an ideal control variable in combination with the vehicle's weight in determining the effect that a car's transmission type has on its fuel efficiency.
+
+Manual transmission vehicles appeared to be more fuel efficient than automatic transmission vehicles in 1973-74. Based on the mtcars dataset, one could argue that, in 1974, a manual transmission vehicle's mpg was between `r round(2.9358 - 2*1.4109,2)` and `r round(2.9358 + 2*1.4109,2)` greater than a similar automatic transmission vehicle with a 95% confidence level.
+
+## Appendix
+#### Variable Descriptions
 Variable Name  | Description
 ------------- | -------------
 *mpg* | Miles/(US) gallon
@@ -37,20 +70,14 @@ vs  | V/S
 gear  | Number of forward gears
 carb  | Number of carburetors
 
-# Exploratory Analysis
-
-**Basic Summary Statistics**
-```{r,echo=FALSE}
-summary(mtcars)
-```
+#### Dependent Variable *mpg*
 ```{r,echo=FALSE}
 hist(mtcars$mpg,breaks=32,col="red",main="Histogram of Dependent Variable (mpg)",xlab="Miles per Gallon")
 abline(v=mean(mtcars$mpg),lwd=2)
 shapiro.test(mtcars$mpg)
 ```
 
-The result of the Shapiro-Wilk normality test suggests it is safe to assume the dependent variable is normal with a mean of `r round(mean(mtcars$mpg),2)` mpg (as illustrated by the dark black line through the histogram above).
-
+#### Exploratory Plots
 ```{r,echo=FALSE}
 mtcars$am <- as.factor(mtcars$am)
 levels(mtcars$am) <- c("Automatic","Manual")
@@ -63,41 +90,18 @@ xyplot(mpg~hp|cyl*am,data=mtcars,ylab="Miles per Gallon",xlab="Horsepower",main=
 xyplot(mpg~wt|cyl*am,data=mtcars,ylab="Miles per Gallon",xlab="Weight (lb/1000)",main="Vehicle Weight and MPG")
 ```
 
-These plots suggest that manual transmission vehicles may be more fuel efficient than automatic transmission vehicles.  The top row is slightly higher than the bottom row, but they also illustrate that other factors are definitely effecting fuel efficiency.
-
-For example, there seems to be an indirect relationship between fuel efficiency and weight.  This builds confidence in the quality of our data because it is reasonable to assume that heavier cars are less fuel efficient. It also necessitates the use of a multi-variate method such as multi-linear regression in order to accurately assess the impact that a car's transmission type (automatic/manual) effects its fuel efficiency.
-
-# Model
-### First Iteration
-```{r}
-reg <- lm(mpg~.,data=mtcars)
-summary(reg)
-```
-
-The first iteration of my regression model includes all of the independent variables from the mtcars dataset.  Only weight seems to significantly impact mpg, but many insignificant variables are still included here.
-
-### Final Regression Model
-In order to determine which variables to include in the final model, I used an R stepwise regression function called "step()" and set the direction="both." This automatic process adds and removes independent variables to the model until it finds the combination of independent variables that maximizes the R^2^ of the model.
-
-$$mpg = \beta_0 + \beta_1 am + \beta_2 qsec + \beta_3 wt + \epsilon$$
-
-```{r,results='hide'}
-final.reg <- lm(mpg~am+qsec+wt,data=mtcars)
-```
-```{r,echo=FALSE}
-summary(final.reg)
-```
-
-# Conclusion
-Many characteristics of cars are highly correlated with each other.  For example, heavy cars tend to have larger engines and powerful engines tend to have more cylinders (see correlation table at the end of the report).  This results in multi-colinearity issues.
-
-In order to deal with this problem, the 1/4 mile speed of a vehicle is extremely useful.  If the car does not have the correct balance of attributes, this medium distance speed will decrease and so to will its fuel efficiency.  Therefore, it is an ideal control variable in combination with the vehicle's weight in determining the effect that a car's transmission type has on its fuel efficiency.
-
-Manual transmission vehicles appeared to be more fuel efficient than automatic transmission vehicles in 1973-74. Based on the mtcars dataset, one could argue that, in 1974, a manual transmission vehicle's mpg was between `r round(2.9358 - 2*1.4109,2)` and `r round(2.9358 + 2*1.4109,2)` greater than a similar automatic transmission vehicle with a 95% confidence level.
-
 #### Regression Diagnostics
 ```{r,echo=FALSE}
 plot(final.reg)
 ```
 
+#### Summary Statistics
+```{r,echo=FALSE}
+summary(mtcars)
+```
 
+#### Correlation Matrix
+```{r,echo=FALSE}
+data(mtcars)
+cor(mtcars)
+```
