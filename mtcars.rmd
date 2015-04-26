@@ -105,6 +105,7 @@ shapiro.test(mtcars$mpg)
 
 #### Exploratory Plots
 ```{r,echo=FALSE}
+data(mtcars)
 mtcars$am <- as.factor(mtcars$am)
 levels(mtcars$am) <- c("Automatic","Manual")
 mtcars$cyl <- as.factor(mtcars$cyl)
